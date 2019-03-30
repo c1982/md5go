@@ -1,0 +1,48 @@
+image: docker
+
+services:
+  - docker:dind
+
+stages:
+  - gosec
+  - build
+
+variables:
+  VERSION: $CI_COMMIT_TAG
+  APP_NAME: md5go
+  REG_USERNAME: $REG_USR_SECRET
+  REG_PASSWORD: $REG_PASSWD_SECRET
+
+security_check:
+  stage: gosec
+  allow_failure: true
+  script:
+    - docker run --name gosec -v $CI_PROJECT_DIR:$HOME/go/src/headball --workdir $HOME/go/src/headball c1982/gs -exclude=G104 -quiet -no-fail -fmt=html -out=report.html ./...
+    - docker inspect gosec --format='gosec exit code --> {{.State.ExitCode}}'
+    - docker cp gosec:$HOME/go/src/headball/report.html .
+  artifacts:
+    when: always
+    paths:
+    - report.html
+    expire_in: 5 day
+  only:
+    - /^v[0-9|\.]+/
+  except:
+    - branches
+  tags:
+    - docker-runner
+
+build:
+  stage: build
+  script:
+    - echo $VERSION
+    - docker build --build-arg VERSION=$VERSION -t $APP_NAME:$VERSION .
+    - docker tag $APP_NAME:$VERSION $REG_USERNAME/$APP_NAME:$VERSION
+    - docker login -u $REG_USERNAME -p $REG_PASSWORD
+    - docker push $REG_USERNAME/$APP_NAME:$VERSIONN
+  only:
+    - /^v[0-9|\.]+/
+  except:
+    - branches
+  tags:
+    - docker-runner
