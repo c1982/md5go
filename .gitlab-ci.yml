@@ -17,9 +17,9 @@ security_check:
   stage: gosec
   allow_failure: true
   script:
-    - docker run --name gosec -v $CI_PROJECT_DIR:$HOME/go/src/headball --workdir $HOME/go/src/headball c1982/gs -exclude=G104 -quiet -no-fail -fmt=html -out=report.html ./...
+    - docker run --name gosec -v $CI_PROJECT_DIR:$HOME/go/src/$APP_NAME --workdir $HOME/go/src/$APP_NAME c1982/gs -exclude=G104 -quiet -no-fail -fmt=html -out=report.html ./...
     - docker inspect gosec --format='gosec exit code --> {{.State.ExitCode}}'
-    - docker cp gosec:$HOME/go/src/headball/report.html .
+    - docker cp gosec:$HOME/go/src/$APP_NAME/report.html .
   artifacts:
     when: always
     paths:
